@@ -1,0 +1,38 @@
+[project]
+name = "jetendard"
+version = "0.1.0"
+description = "Build Jetendard, a JetBrainsMono Nerd Font Mono and Pretendard Korean monospace font."
+readme = "README.md"
+authors = [
+    { name = "Jung Woong Park" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "brotli>=1.2.0",
+    "fonttools>=4.63.0",
+]
+
+[project.scripts]
+jetendard = "jetendard:main"
+
+[build-system]
+requires = ["uv_build>=0.11.19,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+lint = [
+    "ruff>=0.15.16",
+]
+test = [
+    "pytest>=9.0.3",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.pytest]
+addopts = ["--tb=short"]

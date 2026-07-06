@@ -1,0 +1,21 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+/dist/
+
+# Upstream font resources
+upstream/
+
+# Generated font outputs
+fonts/ttf/
+fonts/otf/
+fonts/webfont/
+fonts/specimens/
+
+# OS files
+.DS_Store
+Thumbs.db
