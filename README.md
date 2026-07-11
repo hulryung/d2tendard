@@ -21,6 +21,13 @@ and Nerd Font symbols come from the ligature-enabled `JetBrainsMonoNerdFontMono`
 files. Korean and CJK glyphs come from Pretendard and are fitted into exactly two
 Latin monospace advances.
 
+Glyphs that neither base font covers are filled from
+[D2Coding](https://github.com/naver/d2codingfont): Hanja, kana, enclosed
+alphanumerics such as `①`, enclosed Hangul letters such as `㈀`, and extended
+arrows. Each filled glyph keeps D2Coding's own half/full-width convention, so it
+lands on exactly one or two Latin advances. Latin Extended letters missing from
+JetBrains Mono are filled from Pretendard at one Latin advance.
+
 **Zed Editor (font size 13.5)**
 ![screenshot](assets/screeshots/screenshot-2026-07-06-at-3.38.07-pm.png)
 
@@ -64,6 +71,8 @@ Important options:
 
 - `--latin-dir`: directory containing `JetBrainsMonoNerdFontMono-*.ttf`
 - `--cjk-dir`: directory containing `Pretendard-*.ttf`
+- `--fallback-dir`: directory containing `D2Coding-*.ttf` used to fill glyphs
+  missing from both base fonts
 - `--all`: build the full 16-variant matrix
 - `--variants`: explicit output variants such as `Regular`, `Italic`, or `BoldItalic`
 - `--weights`: weights to build; without `--styles`, this selects upright variants
@@ -103,6 +112,10 @@ archive, so italic Jetendard variants use italic JetBrainsMono Latin glyphs and
 upright Pretendard Korean/CJK glyphs. The generated font metadata and CSS still
 identify those variants as italic.
 
+D2Coding only ships Regular and Bold, so fallback glyphs use `D2Coding-Regular`
+for Thin through Medium and `D2Coding-Bold` for SemiBold through ExtraBold, in
+both upright and italic variants.
+
 ## Scope
 
 Jetendard only uses `JetBrainsMonoNerdFontMono`. It does not use
@@ -140,5 +153,5 @@ outlines as the generated TTFs.
 ## License
 
 Jetendard is distributed under the [SIL Open Font License 1.1](LICENSE). Review
-the upstream JetBrains Mono, Nerd Fonts, Pretendard, and Yeomil Mono projects for
-their full copyright and reserved-name notices.
+the upstream JetBrains Mono, Nerd Fonts, Pretendard, D2Coding, and Yeomil Mono
+projects for their full copyright and reserved-name notices.

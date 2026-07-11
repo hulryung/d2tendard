@@ -77,6 +77,21 @@ JONGSEONG_MAP = {
 }
 JAMO_COMPATIBILITY_MAP = CHOSEONG_MAP | JUNGSEONG_MAP | JONGSEONG_MAP
 
+LATIN_EXTENSION_FILL_RANGES = (
+    (0x0100, 0x017F),  # Latin Extended-A
+    (0x0180, 0x024F),  # Latin Extended-B
+    (0x1E00, 0x1EFF),  # Latin Extended Additional
+)
+
+SYMBOL_FILL_RANGES = (
+    (0x2150, 0x218F),  # Number Forms
+    (0x2190, 0x21FF),  # Arrows
+    (0x2460, 0x24FF),  # Enclosed Alphanumerics
+    (0x3040, 0x30FF),  # Hiragana and Katakana
+    (0x3200, 0x32FF),  # Enclosed CJK Letters and Months
+    (0xF900, 0xFAFF),  # CJK Compatibility Ideographs
+)
+
 
 @dataclass(frozen=True)
 class FittedGlyphTransform:
@@ -98,6 +113,8 @@ class MergeStats:
     latin_advance: int
     korean_advance: int
     requested_total_scale: float
+    latin_ext_copied_count: int = 0
+    fallback_copied_count: int = 0
 
 
 @dataclass(frozen=True)
@@ -109,6 +126,7 @@ class FontVariant:
     style: str
     latin_filename: str
     cjk_weight_name: str
+    fallback_filename: str
     output_suffix: str
     subfamily_name: str
     typographic_subfamily_name: str
@@ -157,12 +175,15 @@ def make_font_variant(weight_name: str, style: str) -> FontVariant:
         output_suffix = weight_name
         subfamily_name = weight_name
 
+    fallback_weight = "Bold" if WEIGHT_TO_CSS[weight_name] >= 600 else "Regular"
+
     return FontVariant(
         weight_name=weight_name,
         css_weight=WEIGHT_TO_CSS[weight_name],
         style=style,
         latin_filename=f"JetBrainsMonoNerdFontMono-{latin_suffix}.ttf",
         cjk_weight_name=weight_name,
+        fallback_filename=f"D2Coding-{fallback_weight}.ttf",
         output_suffix=output_suffix,
         subfamily_name=subfamily_name,
         typographic_subfamily_name=subfamily_name,
@@ -222,6 +243,31 @@ def is_cjk(code: int) -> bool:
         or 0x3000 <= code <= 0x303F
         or 0xFF00 <= code <= 0xFFEF
     )
+
+
+def in_codepoint_ranges(code: int, ranges: tuple[tuple[int, int], ...]) -> bool:
+    """Return whether a codepoint falls inside any of the given closed ranges."""
+    return any(low <= code <= high for low, high in ranges)
+
+
+def is_latin_extension(code: int) -> bool:
+    """Return whether a codepoint belongs to the Latin extension fill ranges."""
+    return in_codepoint_ranges(code, LATIN_EXTENSION_FILL_RANGES)
+
+
+def is_fallback_fill(code: int) -> bool:
+    """Return whether a codepoint may be filled from the fallback (D2Coding) font."""
+    return is_cjk(code) or in_codepoint_ranges(code, SYMBOL_FILL_RANGES)
+
+
+def derive_cell_count(advance: int, source_latin_advance: int) -> int:
+    """Derive a 1- or 2-cell target width from a monospaced source advance."""
+    if source_latin_advance <= 0:
+        msg = f"Source latin advance must be positive, got {source_latin_advance}"
+        raise ValueError(msg)
+    if advance <= 0:
+        return 1
+    return min(2, max(1, round(advance / source_latin_advance)))
 
 
 def collect_cjk_codepoints(cmap: dict[int, str]) -> list[int]:
@@ -499,6 +545,45 @@ def source_glyph_for_codepoint(
     return cjk_cmap.get(source_codepoint)
 
 
+def copy_scaled_glyph(
+    glyf_table: Any,
+    hmtx_table: Any,
+    source_glyph_set: Any,
+    source_glyph_name: str,
+    target_glyph_name: str,
+    *,
+    target_width: int,
+    requested_scale: float,
+    safe_ymin: int,
+    safe_ymax: int,
+    side_bearing_guard: int,
+) -> FittedGlyphTransform:
+    """Copy one decomposed source glyph into the target glyf table, fitted to width."""
+    bounds = get_glyph_bounds(source_glyph_set, source_glyph_name)
+    fitted = calculate_fitted_transform(
+        bounds,
+        target_width=target_width,
+        requested_scale=requested_scale,
+        safe_ymin=safe_ymin,
+        safe_ymax=safe_ymax,
+        side_bearing_guard=side_bearing_guard,
+    )
+
+    decomposed_pen = DecomposingRecordingPen(source_glyph_set)
+    source_glyph_set[source_glyph_name].draw(decomposed_pen)
+
+    glyph_pen = TTGlyphPen(None)
+    transform_pen = TransformPen(
+        glyph_pen,
+        (fitted.scale, 0, 0, fitted.scale, fitted.shift_x, 0),
+    )
+    decomposed_pen.replay(transform_pen)
+
+    glyf_table[target_glyph_name] = glyph_pen.glyph()
+    hmtx_table.metrics[target_glyph_name] = (target_width, fitted.left_side_bearing)
+    return fitted
+
+
 def build_hangul_ccmp_features() -> str:
     """Build GSUB ccmp feature text for decomposed Hangul Jamo composition."""
     fea_lines = [
@@ -607,14 +692,22 @@ def merge_fonts(
     subfamily_name: str,
     korean_scale: float = DEFAULT_KOREAN_SCALE,
     *,
+    fallback_path: str | Path | None = None,
     typographic_subfamily_name: str | None = None,
     is_italic: bool = False,
     css_weight: int | None = None,
 ) -> MergeStats:
-    """Merge JetBrainsMono Nerd Font Mono with Pretendard CJK glyphs."""
+    """Merge JetBrainsMono Nerd Font Mono with Pretendard CJK glyphs.
+
+    When ``fallback_path`` is given (a D2Coding TTF), codepoints that neither
+    base font covers - Hanja, kana, enclosed alphanumerics, arrows, and other
+    coding-oriented symbols - are filled from it, using the fallback font's own
+    half/full-width convention to pick a 1- or 2-cell advance.
+    """
     logger.info("Merging %s + %s -> %s", latin_path, cjk_path, output_path)
     latin_font = TTFont(str(latin_path))
     cjk_font = TTFont(str(cjk_path))
+    fallback_font = TTFont(str(fallback_path)) if fallback_path is not None else None
 
     latin_head = cast("Any", latin_font["head"])
     cjk_head = cast("Any", cjk_font["head"])
@@ -654,49 +747,103 @@ def merge_fonts(
     glyph_order_set = set(glyph_order)
     codepoints = collect_cjk_codepoints(cjk_cmap)
 
+    covered_codepoints = set(latin_font.getBestCmap())
+
     copied_count = 0
+    latin_ext_copied_count = 0
+    fallback_copied_count = 0
     capped_codepoints: list[int] = []
+
+    def copy_codepoint(
+        source_glyph_set: Any,
+        source_glyph_name: str,
+        codepoint: int,
+        *,
+        target_width: int,
+        requested_scale: float,
+    ) -> None:
+        target_glyph_name = f"uni{codepoint:04X}"
+        fitted = copy_scaled_glyph(
+            glyf_table,
+            hmtx_table,
+            source_glyph_set,
+            source_glyph_name,
+            target_glyph_name,
+            target_width=target_width,
+            requested_scale=requested_scale,
+            safe_ymin=safe_ymin,
+            safe_ymax=safe_ymax,
+            side_bearing_guard=side_guard,
+        )
+        if fitted.capped:
+            capped_codepoints.append(codepoint)
+        update_unicode_cmaps(latin_font, codepoint, target_glyph_name)
+        covered_codepoints.add(codepoint)
+        if target_glyph_name not in glyph_order_set:
+            glyph_order.append(target_glyph_name)
+            glyph_order_set.add(target_glyph_name)
 
     for codepoint in codepoints:
         cjk_glyph_name = source_glyph_for_codepoint(codepoint, cjk_cmap)
         if cjk_glyph_name is None or cjk_glyph_name not in cjk_glyph_set:
             continue
-
-        target_glyph_name = f"uni{codepoint:04X}"
-        bounds = get_glyph_bounds(cjk_glyph_set, cjk_glyph_name)
-        fitted = calculate_fitted_transform(
-            bounds,
+        copy_codepoint(
+            cjk_glyph_set,
+            cjk_glyph_name,
+            codepoint,
             target_width=korean_advance,
             requested_scale=requested_total_scale,
-            safe_ymin=safe_ymin,
-            safe_ymax=safe_ymax,
-            side_bearing_guard=side_guard,
         )
-
-        if fitted.capped:
-            capped_codepoints.append(codepoint)
-
-        decomposed_pen = DecomposingRecordingPen(cjk_glyph_set)
-        cjk_glyph_set[cjk_glyph_name].draw(decomposed_pen)
-
-        glyph_pen = TTGlyphPen(None)
-        transform_pen = TransformPen(
-            glyph_pen,
-            (fitted.scale, 0, 0, fitted.scale, fitted.shift_x, 0),
-        )
-        decomposed_pen.replay(transform_pen)
-
-        glyf_table[target_glyph_name] = glyph_pen.glyph()
-        hmtx_table.metrics[target_glyph_name] = (
-            korean_advance,
-            fitted.left_side_bearing,
-        )
-        update_unicode_cmaps(latin_font, codepoint, target_glyph_name)
-
-        if target_glyph_name not in glyph_order_set:
-            glyph_order.append(target_glyph_name)
-            glyph_order_set.add(target_glyph_name)
         copied_count += 1
+
+    for codepoint in sorted(cjk_cmap):
+        if codepoint in covered_codepoints or not is_latin_extension(codepoint):
+            continue
+        cjk_glyph_name = cjk_cmap[codepoint]
+        if cjk_glyph_name not in cjk_glyph_set:
+            continue
+        copy_codepoint(
+            cjk_glyph_set,
+            cjk_glyph_name,
+            codepoint,
+            target_width=latin_advance,
+            requested_scale=upm_scale,
+        )
+        latin_ext_copied_count += 1
+
+    if fallback_font is not None:
+        fallback_cmap = fallback_font.getBestCmap()
+        if not fallback_cmap:
+            msg = "Fallback font has no usable cmap table"
+            raise ValueError(msg)
+        fallback_glyph_set = fallback_font.getGlyphSet()
+        fallback_hmtx = fallback_font["hmtx"]
+        fallback_latin_advance = derive_latin_advance(fallback_font)
+        fallback_scale = latin_advance / fallback_latin_advance
+        logger.info(
+            "Fallback fitting: latin advance=%d, scale=%.6f",
+            fallback_latin_advance,
+            fallback_scale,
+        )
+        for codepoint in sorted(fallback_cmap):
+            if codepoint in covered_codepoints or not is_fallback_fill(codepoint):
+                continue
+            fallback_glyph_name = fallback_cmap[codepoint]
+            if fallback_glyph_name not in fallback_glyph_set:
+                continue
+            advance = fallback_hmtx.metrics[fallback_glyph_name][0]
+            if advance <= 0:
+                continue
+            cells = derive_cell_count(advance, fallback_latin_advance)
+            copy_codepoint(
+                fallback_glyph_set,
+                fallback_glyph_name,
+                codepoint,
+                target_width=latin_advance * cells,
+                requested_scale=fallback_scale,
+            )
+            fallback_copied_count += 1
+        merge_os2_ranges(latin_font, fallback_font)
 
     glyph_order = sync_glyph_order(latin_font, glyf_table, glyph_order)
     merge_os2_ranges(latin_font, cjk_font)
@@ -737,10 +884,18 @@ def merge_fonts(
         if len(capped_codepoints) > 12:
             preview += ", ..."
         logger.info("Capped %d glyphs to avoid clipping: %s", len(capped_codepoints), preview)
-    logger.info("Copied %d CJK glyphs into %s", copied_count, output)
+    logger.info(
+        "Copied %d CJK, %d Latin extension, and %d fallback glyphs into %s",
+        copied_count,
+        latin_ext_copied_count,
+        fallback_copied_count,
+        output,
+    )
 
     latin_font.close()
     cjk_font.close()
+    if fallback_font is not None:
+        fallback_font.close()
 
     return MergeStats(
         copied_count=copied_count,
@@ -748,4 +903,6 @@ def merge_fonts(
         latin_advance=latin_advance,
         korean_advance=korean_advance,
         requested_total_scale=requested_total_scale,
+        latin_ext_copied_count=latin_ext_copied_count,
+        fallback_copied_count=fallback_copied_count,
     )

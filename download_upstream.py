@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 
 NERD_FONTS_VERSION = "v3.4.0"
 PRETENDARD_VERSION = "1.3.9"
+D2CODING_RELEASE_TAG = "VER1.3.2"
+D2CODING_STAMP = "Ver1.3.2-20180524"
 
 JETBRAINS_MONO_URL = (
     f"https://github.com/ryanoasis/nerd-fonts/releases/download/"
@@ -29,12 +31,21 @@ PRETENDARD_URL = (
     "https://github.com/orioncactus/pretendard/releases/download/"
     f"v{PRETENDARD_VERSION}/Pretendard-{PRETENDARD_VERSION}.zip"
 )
+D2CODING_URL = (
+    "https://github.com/naver/d2codingfont/releases/download/"
+    f"{D2CODING_RELEASE_TAG}/D2Coding-{D2CODING_STAMP}.zip"
+)
 
 UPSTREAM_DIR = Path("upstream")
 ARCHIVE_DIR = UPSTREAM_DIR / "_archives"
 JETBRAINS_DIR = UPSTREAM_DIR / "jetbrainsmono"
 PRETENDARD_DIR = UPSTREAM_DIR / "pretendard"
+D2CODING_DIR = UPSTREAM_DIR / "d2coding"
 OPTIONAL_PRETENDARD_FILES = ("PretendardVariable.ttf",)
+D2CODING_RENAMES = {
+    f"D2Coding-{D2CODING_STAMP}.ttf": "D2Coding-Regular.ttf",
+    f"D2CodingBold-{D2CODING_STAMP}.ttf": "D2Coding-Bold.ttf",
+}
 
 
 def download_file(url: str, output_path: Path) -> None:
@@ -130,6 +141,7 @@ def write_sources_note() -> None:
             "",
             f"- Nerd Fonts JetBrainsMono: {NERD_FONTS_VERSION}",
             f"- Pretendard: {PRETENDARD_VERSION}",
+            f"- D2Coding: {D2CODING_RELEASE_TAG}",
             "",
             "## Extracted JetBrainsMono Nerd Font Mono Files",
             "",
@@ -143,6 +155,13 @@ def write_sources_note() -> None:
                 for filename in OPTIONAL_PRETENDARD_FILES
             ],
             "",
+            "## Extracted D2Coding Files",
+            "",
+            *[
+                f"- `{renamed}` (from `{original}`)"
+                for original, renamed in D2CODING_RENAMES.items()
+            ],
+            "",
         ]
     )
     (UPSTREAM_DIR / "SOURCES.md").write_text(note, encoding="utf-8")
@@ -152,6 +171,7 @@ def main() -> int:
     """Download upstream JetBrainsMono Nerd Font Mono and Pretendard files."""
     jetbrains_archive = ARCHIVE_DIR / f"JetBrainsMono-{NERD_FONTS_VERSION}.zip"
     pretendard_archive = ARCHIVE_DIR / f"Pretendard-{PRETENDARD_VERSION}.zip"
+    d2coding_archive = ARCHIVE_DIR / f"D2Coding-{D2CODING_STAMP}.zip"
 
     jetbrains_expected = {variant.latin_filename for variant in DEFAULT_VARIANTS}
     pretendard_expected = {f"Pretendard-{weight}.ttf" for weight in SUPPORTED_WEIGHTS}
@@ -159,6 +179,7 @@ def main() -> int:
     try:
         download_file(JETBRAINS_MONO_URL, jetbrains_archive)
         download_file(PRETENDARD_URL, pretendard_archive)
+        download_file(D2CODING_URL, d2coding_archive)
         extract_expected_fonts(jetbrains_archive, JETBRAINS_DIR, jetbrains_expected)
         extract_expected_fonts(
             pretendard_archive,
@@ -166,6 +187,9 @@ def main() -> int:
             pretendard_expected,
             optional_basenames=set(OPTIONAL_PRETENDARD_FILES),
         )
+        extract_expected_fonts(d2coding_archive, D2CODING_DIR, set(D2CODING_RENAMES))
+        for original, renamed in D2CODING_RENAMES.items():
+            (D2CODING_DIR / original).replace(D2CODING_DIR / renamed)
         write_sources_note()
     except Exception:
         logger.exception("Failed to prepare upstream resources")

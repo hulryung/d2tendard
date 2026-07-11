@@ -1,10 +1,10 @@
 Copyright (c) 2026 Jung Woong Park
 with Reserved Font Name "Jetendard".
 
-This project builds a modified font from JetBrains Mono, Nerd Fonts, and
-Pretendard sources, with implementation structure informed by Yeomil Mono.
-Generated Jetendard fonts must not use the reserved names of the upstream
-projects as their primary family name.
+This project builds a modified font from JetBrains Mono, Nerd Fonts,
+Pretendard, and D2Coding sources, with implementation structure informed by
+Yeomil Mono. Generated Jetendard fonts must not use the reserved names of the
+upstream projects as their primary family name.
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:

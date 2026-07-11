@@ -14,10 +14,13 @@ from jetendard.builder import (
     calculate_fitted_transform,
     calculate_korean_target_width,
     collect_cjk_codepoints,
+    derive_cell_count,
     derive_latin_advance,
     enforce_monospace_flags,
     get_variants_by_names,
     is_cjk,
+    is_fallback_fill,
+    is_latin_extension,
     make_font_variant,
     merge_fonts,
     update_font_names,
@@ -113,6 +116,45 @@ def test_regular_italic_variant_uses_special_source_filename() -> None:
 def test_get_variants_by_names_rejects_unknown_variant() -> None:
     with pytest.raises(ValueError, match="Unsupported variant"):
         get_variants_by_names(["Regular", "BookItalic"])
+
+
+def test_variant_fallback_filename_maps_weights_to_d2coding_sources() -> None:
+    assert make_font_variant("Thin", "normal").fallback_filename == "D2Coding-Regular.ttf"
+    assert make_font_variant("Medium", "normal").fallback_filename == "D2Coding-Regular.ttf"
+    assert make_font_variant("SemiBold", "normal").fallback_filename == "D2Coding-Bold.ttf"
+    assert make_font_variant("ExtraBold", "italic").fallback_filename == "D2Coding-Bold.ttf"
+
+
+def test_is_fallback_fill_covers_hanja_and_symbol_ranges() -> None:
+    assert is_fallback_fill(0x4E00) is True
+    assert is_fallback_fill(0xF900) is True
+    assert is_fallback_fill(0x2460) is True
+    assert is_fallback_fill(0x21B5) is True
+    assert is_fallback_fill(0x30A2) is True
+    assert is_fallback_fill(0x3165) is True
+    assert is_fallback_fill(0xE0B0) is False
+    assert is_fallback_fill(ord("A")) is False
+
+
+def test_is_latin_extension_covers_extended_blocks_only() -> None:
+    assert is_latin_extension(0x0132) is True
+    assert is_latin_extension(0x0180) is True
+    assert is_latin_extension(0x1E00) is True
+    assert is_latin_extension(ord("A")) is False
+    assert is_latin_extension(0x2460) is False
+
+
+def test_derive_cell_count_follows_source_width_convention() -> None:
+    assert derive_cell_count(500, 500) == 1
+    assert derive_cell_count(1000, 500) == 2
+    assert derive_cell_count(600, 500) == 1
+    assert derive_cell_count(3000, 500) == 2
+    assert derive_cell_count(0, 500) == 1
+
+
+def test_derive_cell_count_rejects_invalid_latin_advance() -> None:
+    with pytest.raises(ValueError, match="positive"):
+        derive_cell_count(500, 0)
 
 
 def test_is_cjk_supported_ranges() -> None:
@@ -278,6 +320,42 @@ def test_integration_merge_skips_without_upstream_fonts(tmp_path: Path) -> None:
     assert font["post"].isFixedPitch == 1
     assert "calt" in features
     assert "ccmp" in features
+    font.close()
+
+
+def test_integration_merge_with_fallback_fills_missing_glyphs(tmp_path: Path) -> None:
+    latin_path = Path("upstream/jetbrainsmono/JetBrainsMonoNerdFontMono-Regular.ttf")
+    cjk_path = Path("upstream/pretendard/Pretendard-Regular.ttf")
+    fallback_path = Path("upstream/d2coding/D2Coding-Regular.ttf")
+    if not latin_path.exists() or not cjk_path.exists() or not fallback_path.exists():
+        pytest.skip("upstream fonts have not been downloaded")
+
+    output_path = tmp_path / "Jetendard-Regular.ttf"
+    stats = merge_fonts(
+        latin_path=latin_path,
+        cjk_path=cjk_path,
+        output_path=output_path,
+        family_name="Jetendard",
+        subfamily_name="Regular",
+        fallback_path=fallback_path,
+    )
+
+    font = TTFont(str(output_path))
+    cmap = font.getBestCmap()
+    metrics = font["hmtx"].metrics
+    latin_advance = metrics[cmap[ord("A")]][0]
+
+    assert stats.fallback_copied_count > 4_000
+    assert stats.latin_ext_copied_count > 100
+    # Hanja and enclosed alphanumerics from D2Coding land on two cells.
+    assert metrics[cmap[0x4E00]][0] == latin_advance * 2
+    assert metrics[cmap[0x2460]][0] == latin_advance * 2
+    # Arrows from D2Coding and Latin extensions from Pretendard land on one cell.
+    assert metrics[cmap[0x21B5]][0] == latin_advance
+    assert metrics[cmap[0x1E00]][0] == latin_advance
+    # Nerd Font symbols and Pretendard Hangul are untouched.
+    assert cmap[0xE0B0]
+    assert metrics[cmap[ord("가")]][0] == latin_advance * 2
     font.close()
 
 

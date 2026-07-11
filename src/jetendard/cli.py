@@ -75,6 +75,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="Directory containing Pretendard TTF files.",
     )
     parser.add_argument(
+        "--fallback-dir",
+        default="upstream/d2coding",
+        help=(
+            "Directory containing D2Coding TTF files used to fill glyphs missing "
+            "from both base fonts, such as Hanja and enclosed alphanumerics."
+        ),
+    )
+    parser.add_argument(
         "--output-dir",
         default="fonts",
         help="Directory to save generated fonts.",
@@ -213,6 +221,7 @@ def main(argv: list[str] | None = None) -> int:
 
     latin_dir = Path(args.latin_dir)
     cjk_dir = Path(args.cjk_dir)
+    fallback_dir = Path(args.fallback_dir)
     base_output_dir = Path(args.output_dir)
     ttf_dir = base_output_dir / "ttf"
     otf_dir = base_output_dir / "otf"
@@ -244,6 +253,15 @@ def main(argv: list[str] | None = None) -> int:
             logger.error("Run `make download` to fetch Pretendard files.")
             return 1
 
+        fallback_path: Path | None = fallback_dir / variant.fallback_filename
+        if not fallback_path.exists():
+            logger.warning(
+                "Fallback font file not found: %s. Building without D2Coding fill; "
+                "run `make download` to fetch D2Coding files.",
+                fallback_path,
+            )
+            fallback_path = None
+
         try:
             stats = merge_fonts(
                 latin_path=latin_path,
@@ -252,14 +270,18 @@ def main(argv: list[str] | None = None) -> int:
                 family_name=args.family_name,
                 subfamily_name=variant.subfamily_name,
                 korean_scale=args.korean_scale,
+                fallback_path=fallback_path,
                 typographic_subfamily_name=variant.typographic_subfamily_name,
                 is_italic=variant.is_italic,
                 css_weight=variant.css_weight,
             )
             logger.info(
-                "%s: copied=%d capped=%d latin_advance=%d korean_advance=%d",
+                "%s: copied=%d latin_ext=%d fallback=%d capped=%d "
+                "latin_advance=%d korean_advance=%d",
                 variant.output_suffix,
                 stats.copied_count,
+                stats.latin_ext_copied_count,
+                stats.fallback_copied_count,
                 stats.capped_count,
                 stats.latin_advance,
                 stats.korean_advance,
