@@ -1,4 +1,4 @@
-"""Download and extract upstream font files for Jetendard."""
+"""Download and extract upstream font files for D2tendard."""
 
 from __future__ import annotations
 
@@ -57,7 +57,7 @@ def download_file(url: str, output_path: Path) -> None:
 
     tmp_path = output_path.with_suffix(output_path.suffix + ".tmp")
     logger.info("Downloading %s", url)
-    request = urllib.request.Request(url, headers={"User-Agent": "Jetendard builder"})
+    request = urllib.request.Request(url, headers={"User-Agent": "D2tendard builder"})
     try:
         with (
             urllib.request.urlopen(request, timeout=120) as response,
@@ -77,7 +77,7 @@ def download_file(url: str, output_path: Path) -> None:
                 "--connect-timeout",
                 "30",
                 "-A",
-                "Jetendard builder",
+                "D2tendard builder",
                 "-o",
                 str(tmp_path),
                 url,
@@ -137,7 +137,7 @@ def write_sources_note() -> None:
     pretendard_files = [f"Pretendard-{weight}.ttf" for weight in SUPPORTED_WEIGHTS]
     note = "\n".join(
         [
-            "# Jetendard Upstream Sources",
+            "# D2tendard Upstream Sources",
             "",
             f"- Nerd Fonts JetBrainsMono: {NERD_FONTS_VERSION}",
             f"- Pretendard: {PRETENDARD_VERSION}",

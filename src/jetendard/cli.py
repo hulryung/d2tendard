@@ -1,4 +1,4 @@
-"""Command-line interface for Jetendard."""
+"""Command-line interface for D2tendard."""
 
 from __future__ import annotations
 
@@ -57,10 +57,10 @@ def write_css(output_web_dir: Path, family_name: str, variants: list[FontVariant
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Build the Jetendard CLI parser."""
+    """Build the D2tendard CLI parser."""
     parser = argparse.ArgumentParser(
         description=(
-            "Build Jetendard from ligature-enabled JetBrainsMono Nerd Font Mono "
+            "Build D2tendard from ligature-enabled JetBrainsMono Nerd Font Mono "
             "and Pretendard Korean glyphs."
         )
     )
@@ -89,7 +89,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--family-name",
-        default="Jetendard",
+        default="D2tendard",
         help="Generated font family name.",
     )
     parser.add_argument(
@@ -131,7 +131,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--all",
         action="store_true",
-        help="Build the full 16-variant Jetendard coverage matrix.",
+        help="Build the full 16-variant D2tendard coverage matrix.",
     )
     parser.add_argument(
         "--korean-italic-mode",
@@ -203,7 +203,7 @@ def select_variants(
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the Jetendard build."""
+    """Run the D2tendard build."""
     parser = build_parser()
     args = parser.parse_args(argv)
 
@@ -233,7 +233,7 @@ def main(argv: list[str] | None = None) -> int:
 
     stem = family_file_stem(args.family_name)
     logger.info(
-        "Starting Jetendard build for variants: %s",
+        "Starting D2tendard build for variants: %s",
         ", ".join(variant.output_suffix for variant in variants),
     )
 
@@ -303,7 +303,7 @@ def main(argv: list[str] | None = None) -> int:
             return 1
 
     write_css(web_dir, args.family_name, variants)
-    logger.info("All requested Jetendard variants built successfully")
+    logger.info("All requested D2tendard variants built successfully")
     return 0
 
 

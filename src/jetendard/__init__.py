@@ -1,4 +1,4 @@
-"""Jetendard package."""
+"""D2tendard package."""
 
 from jetendard.cli import main
 

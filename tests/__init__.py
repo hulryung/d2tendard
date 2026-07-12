@@ -1,1 +1,1 @@
-"""Tests for Jetendard."""
+"""Tests for D2tendard."""

@@ -1,4 +1,4 @@
-"""Font merging and fitting logic for Jetendard."""
+"""Font merging and fitting logic for D2tendard."""
 
 from __future__ import annotations
 
@@ -119,7 +119,7 @@ class MergeStats:
 
 @dataclass(frozen=True)
 class FontVariant:
-    """One buildable Jetendard output variant."""
+    """One buildable D2tendard output variant."""
 
     weight_name: str
     css_weight: int
