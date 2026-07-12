@@ -1,6 +1,13 @@
 # D2tendard
 
-This project is heavily inspired by
+This project is a fork of
+[Jetendard](https://github.com/kuskhan/jetendard). It extends Jetendard by
+filling glyphs missing from both base fonts with
+[D2Coding](https://github.com/naver/d2codingfont), and the generated family is
+renamed because the OFL reserves the "Jetendard" font name for the original
+project.
+
+Jetendard itself is heavily inspired by
 [Yeomil Mono](https://github.com/taevel02/yeomil-mono) and reuses much of its
 implementation with minimal changes. Compared with
 [Yeomil Mono](https://github.com/taevel02/yeomil-mono), D2tendard uses

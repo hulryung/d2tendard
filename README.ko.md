@@ -2,7 +2,13 @@
 
 [English](README.md)
 
-이 프로젝트는 [Yeomil Mono](https://github.com/taevel02/yeomil-mono)에 큰
+이 프로젝트는 [Jetendard](https://github.com/kuskhan/jetendard)의 fork입니다.
+두 기본 폰트에 없는 글리프를
+[D2Coding](https://github.com/naver/d2codingfont)으로 채우도록 Jetendard를
+확장했으며, OFL이 "Jetendard" 폰트 이름을 원본 프로젝트의 Reserved Font
+Name으로 지정하고 있어 생성되는 패밀리 이름을 변경했습니다.
+
+Jetendard는 [Yeomil Mono](https://github.com/taevel02/yeomil-mono)에 큰
 영향을 받았으며, 구현의 상당 부분을 최소한의 변경만 거쳐 재사용합니다.
 [Yeomil Mono](https://github.com/taevel02/yeomil-mono)와 비교했을 때
 D2tendard는 [Geist Mono](https://github.com/vercel/geist-font/tree/main/fonts/GeistMono)
