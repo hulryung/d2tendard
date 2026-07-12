@@ -35,6 +35,8 @@ arrows. Each filled glyph keeps D2Coding's own half/full-width convention, so it
 lands on exactly one or two Latin advances. Latin Extended letters missing from
 JetBrains Mono are filled from Pretendard at one Latin advance.
 
+![D2tendard specimen](assets/d2tendard-preview.png)
+
 **Zed Editor (font size 13.5)**
 ![screenshot](assets/screeshots/screenshot-2026-07-06-at-3.38.07-pm.png)
 

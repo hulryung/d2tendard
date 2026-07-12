@@ -35,6 +35,8 @@ D2tendard는
 고정폭의 1배 또는 2배 폭에 맞춰집니다. JetBrains Mono에 없는 라틴 확장
 문자는 Pretendard에서 1배 폭으로 채웁니다.
 
+![D2tendard 예시](assets/d2tendard-preview.png)
+
 **Zed 에디터 (폰트 사이즈 13.5)**
 ![예시 스크린샷](assets/screeshots/screenshot-2026-07-06-at-3.38.07-pm.png)
 
