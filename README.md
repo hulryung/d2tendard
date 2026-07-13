@@ -73,7 +73,7 @@ Generated outputs and upstream downloads are intentionally ignored by git.
 ## CLI
 
 ```bash
-uv run jetendard --help
+uv run d2tendard --help
 ```
 
 Important options:
@@ -95,9 +95,9 @@ The default Korean scale is `1.15`.
 Examples:
 
 ```bash
-uv run jetendard --all
-uv run jetendard --weights Regular Bold --styles normal italic
-uv run jetendard --variants Regular Light Bold
+uv run d2tendard --all
+uv run d2tendard --weights Regular Bold --styles normal italic
+uv run d2tendard --variants Regular Light Bold
 ```
 
 ## Variant Coverage

@@ -72,7 +72,7 @@ make test
 ## CLI
 
 ```bash
-uv run jetendard --help
+uv run d2tendard --help
 ```
 
 주요 옵션:
@@ -94,9 +94,9 @@ uv run jetendard --help
 예시:
 
 ```bash
-uv run jetendard --all
-uv run jetendard --weights Regular Bold --styles normal italic
-uv run jetendard --variants Regular Light Bold
+uv run d2tendard --all
+uv run d2tendard --weights Regular Bold --styles normal italic
+uv run d2tendard --variants Regular Light Bold
 ```
 
 ## 변형 지원 범위

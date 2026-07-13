@@ -26,13 +26,13 @@ ensure-upstream:
 	fi
 
 run: ensure-upstream
-	uv run jetendard --all
+	uv run d2tendard --all
 
 run-all: ensure-upstream
-	uv run jetendard --all
+	uv run d2tendard --all
 
 run-minimal: ensure-upstream
-	uv run jetendard --variants Regular Light Bold
+	uv run d2tendard --variants Regular Light Bold
 
 clean:
 	rm -rf fonts/ttf fonts/otf fonts/webfont fonts/specimens
