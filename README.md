@@ -37,19 +37,6 @@ JetBrains Mono are filled from Pretendard at one Latin advance.
 
 ![D2tendard specimen](assets/d2tendard-preview.png)
 
-**Zed Editor (font size 13.5)**
-![screenshot](assets/screeshots/screenshot-2026-07-06-at-3.38.07-pm.png)
-
-**Zed Editor (Korean comments)**
-![screenshot](assets/screeshots/screenshot-2026-07-07-at-10.59.35-am.png)
-
-**Ghostty Terminal (Text Output)**
-![screenshot](assets/screeshots/screenshot-2026-07-06-at-4.59.31-pm.png)
-
-**Ghostty Terminal (Codex)**
-![screenshot](assets/screeshots/screenshot-2026-07-06-at-10.44.13-pm.png)
-
-
 ## Build
 
 ```bash
