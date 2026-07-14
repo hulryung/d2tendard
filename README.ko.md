@@ -37,8 +37,8 @@ D2tendard는
 
 ![D2tendard 예시](assets/d2tendard-preview.png)
 
-**터미널 렌더링**
-![터미널에서 렌더링된 D2tendard](assets/d2tendard-terminal.png)
+**터미널 렌더링 (프로그래밍 리거처 적용)**
+![터미널에서 리거처와 함께 렌더링된 D2tendard](assets/d2tendard-terminal.png)
 
 ## 빌드
 

@@ -37,8 +37,8 @@ JetBrains Mono are filled from Pretendard at one Latin advance.
 
 ![D2tendard specimen](assets/d2tendard-preview.png)
 
-**Live in a terminal**
-![D2tendard rendered in a terminal](assets/d2tendard-terminal.png)
+**Live in a terminal (programming ligatures on)**
+![D2tendard rendered in a terminal with ligatures](assets/d2tendard-terminal.png)
 
 ## Build
 
